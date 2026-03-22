@@ -1,0 +1,69 @@
+{
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "error": "Error",
+    "confirm": "Confirm",
+    "required": "Required field",
+    "required_fields": "Please fill in the required fields: name, brand and code."
+  },
+  "menu": {
+    "home": "Home",
+    "brands": "Brands"
+  },
+  "inventory": {
+    "title": "My Inventory",
+    "add_color": "+ New color",
+    "add_color_title": "New Color",
+    "empty": "No colors yet. Add your first one!",
+    "search_placeholder": "Search by name, brand, color...",
+    "filter_all": "All",
+    "filter_pan": "Pans",
+    "filter_tube": "Tubes"
+  },
+  "color": {
+    "name": "Color name",
+    "brand": "Brand",
+    "code": "Code",
+    "series": "Series",
+    "format": "Format",
+    "format_pan": "Pan",
+    "format_tube": "Tube",
+    "lightfast": "Lightfastness",
+    "lightfast_1": "Limited",
+    "lightfast_2": "Good",
+    "lightfast_3": "Excellent",
+    "transparency": "Transparency",
+    "transparency_transparent": "Transparent",
+    "transparency_opaque": "Opaque",
+    "transparency_semi_opaque": "Semi-opaque",
+    "transparency_semi_transparent": "Semi-transparent",
+    "transparency_granulating": "Transparent + Granulation",
+    "in_use": "In use",
+    "quantity": "Remaining",
+    "spare": "Spare",
+    "hex": "Hex color selection",
+    "notes": "Personal notes",
+    "save": "Save",
+    "cancel": "Cancel",
+    "pick": "Choose"
+  },
+  "quantity": {
+    "full": "Full",
+    "half": "Half",
+    "low": "Low",
+    "empty": "Empty"
+  },
+  "brand": {
+    "search": "Search brand...",
+    "already_exists": "This brand already exists.",
+    "results": "results",
+    "confirm_delete": "Are you sure you want to delete this brand?",
+    "new": "Add new brand..."
+  },
+  "color_detail": {
+    "confirm_delete": "Are you sure you want to delete this color?",
+    "title": "Color Detail",
+    "edit": "Edit"
+  }
+}

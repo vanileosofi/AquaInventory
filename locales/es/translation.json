@@ -1,0 +1,73 @@
+{
+  "common": {
+    "yes": "Sí",
+    "no": "No",
+    "error": "Error",
+    "confirm": "Confirmar",
+    "required": "Campo obligatorio",
+    "required_fields": "Por favor completa los campos obligatorios: nombre, marca y código."
+  },
+  "menu": {
+    "home": "Inicio",
+    "brands": "Marcas"
+  },
+  "inventory": {
+    "title": "Mi Inventario",
+    "add_color": "+ Nuevo color",
+    "add_color_title": "Nuevo Color",
+    "empty": "No hay colores aún. ¡Agrega el primero!",
+    "search_placeholder": "Buscar por nombre, marca, código...",
+    "filter_format": "Formato",
+    "filter_brand": "Marca",
+    "filter_all": "Todos",
+    "filter_pan": "Pastillas",
+    "filter_tube": "Pomos",
+    "filter_brands_selected": "marcas",
+    "clear_filters": "Borrar filtros"
+  },
+  "color": {
+    "name": "Nombre del color",
+    "brand": "Marca",
+    "code": "Código",
+    "series": "Serie",
+    "format": "Formato",
+    "format_pan": "Pastilla",
+    "format_tube": "Pomo",
+    "lightfast": "Resistencia a la luz",
+    "lightfast_1": "Limitada",
+    "lightfast_2": "Buena",
+    "lightfast_3": "Excelente",
+    "transparency": "Transparencia",
+    "transparency_transparent": "Transparente",
+    "transparency_opaque": "Opaco",
+    "transparency_semi_opaque": "Semiopaco",
+    "transparency_semi_transparent": "Semitransparente",
+    "transparency_granulating": "Transparente + Granulación",
+    "in_use": "En uso",
+    "quantity": "Cantidad restante",
+    "spare": "Repuesto",
+    "hex": "Selección de color hexadecimal",
+    "notes": "Notas personales",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "pick": "Elegir"
+  },
+  "quantity": {
+    "full": "Lleno",
+    "half": "Medio",
+    "low": "Poco",
+    "empty": "Vacío"
+  },
+  "brand": {
+    "search": "Buscar marca...",
+    "already_exists": "Esta marca ya existe.",
+    "results": "resultados",
+    "confirm_delete": "¿Estás segura de que quieres eliminar esta marca?",
+    "new": "Agregar nueva marca..."
+  },
+  "color_detail": {
+    "confirm_delete": "¿Estás segura de que quieres eliminar este color?",
+    "title": "Detalle del Color",
+    "edit": "Editar"
+  }
+}
