@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BrandPicker from '../components/BrandPicker';
+import ColorAISearch from '../components/ColorAISearch';
 import HexColorPicker from '../components/ColorPicker';
 import { saveColor } from '../storage/colors';
 import { showError } from '../utils/alert';
@@ -34,30 +35,30 @@ const QTY_EMOJI: Record<string, string> = {
 
 export default function AddColorScreen() {
   const { t } = useTranslation();
+  const scrollRef = useRef<any>(null);
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [code, setCode] = useState('');
-  const [series, setSeries] = useState('');
   const [format, setFormat] = useState('pan');
   const [lightfast, setLightfast] = useState(0);
   const [transparency, setTransparency] = useState('');
+  const [series, setSeries] = useState('');
   const [inUse, setInUse] = useState(false);
   const [quantity, setQuantity] = useState('full');
   const [spare, setSpare] = useState(0);
   const [notes, setNotes] = useState('');
   const [hex, setHex] = useState('#000000');
-  const scrollRef = useRef<any>(null);
 
   useFocusEffect(
     useCallback(() => {
       setName('');
       setBrand('');
       setCode('');
-      setSeries('');
       setFormat('pan');
       setLightfast(0);
       setTransparency('');
+      setSeries('');
       setInUse(false);
       setQuantity('full');
       setSpare(0);
@@ -82,7 +83,7 @@ export default function AddColorScreen() {
       showError(t('common.required_fields'));
       return;
     }
-    await saveColor({
+    const result = await saveColor({
       name: name.trim(),
       brand: brand.trim(),
       code: code.trim(),
@@ -96,12 +97,17 @@ export default function AddColorScreen() {
       notes: notes.trim(),
       hex,
     });
+    if (result.duplicate) {
+      showError(t('color.duplicate'));
+      return;
+    }
     router.back();
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+
         {/* Name */}
         <Text style={styles.label}>
           {t('color.name')}<Text style={styles.required}> *</Text>
@@ -129,6 +135,24 @@ export default function AddColorScreen() {
           onChangeText={setCode}
           placeholder={t('color.code')}
         />
+
+        {/* Format */}
+        <Text style={styles.label}>
+          {t('color.format')}<Text style={styles.required}> *</Text>
+        </Text>
+        <View style={styles.row}>
+          {FORMATS.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.chip, format === f && styles.chipActive]}
+              onPress={() => setFormat(f)}
+            >
+              <Text style={[styles.chipText, format === f && styles.chipTextActive]}>
+                {t(`color.format_${f}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* Lightfastness */}
         <Text style={styles.label}>{t('color.lightfast')}</Text>
@@ -172,22 +196,6 @@ export default function AddColorScreen() {
           onChangeText={setSeries}
           placeholder={t('color.series')}
         />
-
-        {/* Format */}
-        <Text style={styles.label}>{t('color.format')}</Text>
-        <View style={styles.row}>
-          {FORMATS.map((f) => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.chip, format === f && styles.chipActive]}
-              onPress={() => setFormat(f)}
-            >
-              <Text style={[styles.chipText, format === f && styles.chipTextActive]}>
-                {t(`color.format_${f}`)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* In use */}
         <Text style={styles.label}>{t('color.in_use')}</Text>
@@ -255,9 +263,25 @@ export default function AddColorScreen() {
           numberOfLines={3}
         />
 
-      {/* HEX + preview */}
-      <Text style={styles.label}>{t('color.hex')}</Text>
-        <HexColorPicker value={hex} onChange={setHex} />
+        {/* HEX */}
+        <Text style={styles.label}>{t('color.hex')}</Text>
+        <View style={styles.hexRow}>
+          <View style={[styles.hexSwatch, { backgroundColor: hex }]} />
+          <Text style={styles.hexValue}>{hex}</Text>
+          <Text style={styles.searchLabel}>{t('color_ai.search_label')}</Text>
+          <ColorAISearch
+            name={name}
+            brand={brand}
+            code={code}
+            onSelect={setHex}
+            buttonLabel={t('color_ai.ai_button')}
+          />
+          <HexColorPicker
+            value={hex}
+            onChange={setHex}
+            buttonLabel={t('color_ai.manual_button')}
+          />
+        </View>
 
         {/* Buttons */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -288,9 +312,10 @@ const styles = StyleSheet.create({
   stepperButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#3B44AC', alignItems: 'center', justifyContent: 'center' },
   stepperButtonText: { color: '#fff', fontSize: 22, fontWeight: '600' },
   stepperValue: { fontSize: 20, fontWeight: '600', minWidth: 30, textAlign: 'center' },
-  hexRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  swatch: { width: 48, height: 48, borderRadius: 8 },
-  hexInput: { flex: 1 },
+  hexRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  hexSwatch: { width: 32, height: 32, borderRadius: 6, borderWidth: 1, borderColor: '#ddd' },
+  hexValue: { fontSize: 14, color: '#333', flex: 1 },
+  searchLabel: { fontSize: 13, color: '#666' },
   saveButton: { backgroundColor: '#3B44AC', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 32 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   cancelButton: { padding: 16, alignItems: 'center' },

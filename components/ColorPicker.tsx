@@ -6,9 +6,10 @@ import ColorPicker from 'react-native-wheel-color-picker';
 interface Props {
   value: string;
   onChange: (hex: string) => void;
+  buttonLabel?: string;
 }
 
-export default function HexColorPicker({ value, onChange }: Props) {
+export default function HexColorPicker({ value, onChange, buttonLabel }: Props) {
   const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const [currentColor, setCurrentColor] = useState(value);
@@ -25,16 +26,9 @@ export default function HexColorPicker({ value, onChange }: Props) {
 
   return (
     <View>
-      <View style={styles.row}>
-        <TouchableOpacity
-          style={[styles.swatch, { backgroundColor: value }]}
-          onPress={() => setModalVisible(true)}
-        />
-        <Text style={styles.hexText}>{value}</Text>
-        <TouchableOpacity style={styles.changeButton} onPress={() => setModalVisible(true)}>
-          <Text style={styles.changeButtonText}>{t('color.pick')}</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.btn} onPress={() => setModalVisible(true)}>
+        <Text style={styles.btnText}>{buttonLabel ?? t('color.pick')}</Text>
+      </TouchableOpacity>
 
       <Modal visible={modalVisible} animationType="slide" onRequestClose={handleClose}>
         <View style={styles.modal}>
@@ -71,11 +65,8 @@ export default function HexColorPicker({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  swatch: { width: 48, height: 48, borderRadius: 8, borderWidth: 1, borderColor: '#ddd' },
-  hexText: { fontSize: 15, color: '#333', flex: 1 },
-  changeButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#3B44AC' },
-  changeButtonText: { color: '#3B44AC', fontSize: 13, fontWeight: '600' },
+  btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#3B44AC', backgroundColor: '#f0f2ff' },
+  btnText: { color: '#3B44AC', fontSize: 13, fontWeight: '600' },
   modal: { flex: 1, paddingTop: 60, paddingHorizontal: 16, backgroundColor: '#fff' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 22, fontWeight: 'bold' },

@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BrandPicker from '../components/BrandPicker';
+import ColorAISearch from '../components/ColorAISearch';
 import HexColorPicker from '../components/ColorPicker';
 import { Color, deleteColor, getColors, updateColor } from '../storage/colors';
-import { showConfirm } from '../utils/alert';
+import { showConfirm, showError } from '../utils/alert';
 
 const FORMATS = ['pan', 'tube'];
 const QUANTITIES = ['full', 'half', 'low', 'empty'];
@@ -39,14 +40,13 @@ export default function ColorDetailScreen() {
   const [color, setColor] = useState<Color | null>(null);
   const [editing, setEditing] = useState(false);
 
-  // Editable fields
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [code, setCode] = useState('');
-  const [series, setSeries] = useState('');
   const [format, setFormat] = useState('pan');
   const [lightfast, setLightfast] = useState(0);
   const [transparency, setTransparency] = useState('');
+  const [series, setSeries] = useState('');
   const [inUse, setInUse] = useState(false);
   const [quantity, setQuantity] = useState('full');
   const [spare, setSpare] = useState(0);
@@ -61,10 +61,10 @@ export default function ColorDetailScreen() {
       setName(found.name);
       setBrand(found.brand);
       setCode(found.code);
-      setSeries(found.series);
       setFormat(found.format);
       setLightfast(found.lightfast);
       setTransparency(found.transparency);
+      setSeries(found.series);
       setInUse(found.inUse);
       setQuantity(found.quantity);
       setSpare(found.spare);
@@ -93,6 +93,10 @@ export default function ColorDetailScreen() {
   };
 
   const handleSave = async () => {
+    if (!name.trim() || !brand.trim() || !code.trim()) {
+      showError(t('common.required_fields'));
+      return;
+    }
     await updateColor(id, {
       name, brand, code, series,
       format: format as 'pan' | 'tube',
@@ -180,6 +184,24 @@ export default function ColorDetailScreen() {
           editable={editing}
         />
 
+        {/* Format */}
+        <Text style={styles.label}>
+          {t('color.format')}<Text style={styles.required}> *</Text>
+        </Text>
+        <View style={styles.row}>
+          {FORMATS.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.chip, format === f && styles.chipActive, disabled && styles.chipDisabled]}
+              onPress={() => editing && setFormat(f)}
+            >
+              <Text style={[styles.chipText, format === f && styles.chipTextActive]}>
+                {t(`color.format_${f}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* Lightfastness */}
         <Text style={styles.label}>{t('color.lightfast')}</Text>
         <View style={styles.row}>
@@ -222,22 +244,6 @@ export default function ColorDetailScreen() {
           onChangeText={setSeries}
           editable={editing}
         />
-
-        {/* Format */}
-        <Text style={styles.label}>{t('color.format')}</Text>
-        <View style={styles.row}>
-          {FORMATS.map((f) => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.chip, format === f && styles.chipActive, disabled && styles.chipDisabled]}
-              onPress={() => editing && setFormat(f)}
-            >
-              <Text style={[styles.chipText, format === f && styles.chipTextActive]}>
-                {t(`color.format_${f}`)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* In use */}
         <Text style={styles.label}>{t('color.in_use')}</Text>
@@ -308,11 +314,27 @@ export default function ColorDetailScreen() {
         {/* HEX */}
         <Text style={styles.label}>{t('color.hex')}</Text>
         {editing ? (
-          <HexColorPicker value={hex} onChange={setHex} />
+          <View style={styles.hexRow}>
+            <View style={[styles.hexSwatch, { backgroundColor: hex }]} />
+            <Text style={styles.hexValue}>{hex}</Text>
+            <Text style={styles.searchLabel}>{t('color_ai.search_label')}</Text>
+            <ColorAISearch
+              name={name}
+              brand={brand}
+              code={code}
+              onSelect={setHex}
+              buttonLabel={t('color_ai.ai_button')}
+            />
+            <HexColorPicker
+              value={hex}
+              onChange={setHex}
+              buttonLabel={t('color_ai.manual_button')}
+            />
+          </View>
         ) : (
           <View style={styles.hexRow}>
             <View style={[styles.hexSwatch, { backgroundColor: hex }]} />
-            <Text style={styles.hexText}>{hex}</Text>
+            <Text style={styles.hexValue}>{hex}</Text>
           </View>
         )}
 
@@ -349,7 +371,8 @@ const styles = StyleSheet.create({
   stepperButtonDisabled: { backgroundColor: '#ccc' },
   stepperButtonText: { color: '#fff', fontSize: 22, fontWeight: '600' },
   stepperValue: { fontSize: 20, fontWeight: '600', minWidth: 30, textAlign: 'center' },
-  hexRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  hexSwatch: { width: 48, height: 48, borderRadius: 8, borderWidth: 1, borderColor: '#ddd' },
-  hexText: { fontSize: 15, color: '#333' },
+  hexRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  hexSwatch: { width: 32, height: 32, borderRadius: 6, borderWidth: 1, borderColor: '#ddd' },
+  hexValue: { fontSize: 14, color: '#333', flex: 1 },
+  searchLabel: { fontSize: 13, color: '#666' },
 });

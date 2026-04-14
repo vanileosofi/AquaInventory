@@ -41,6 +41,13 @@ export default function RootLayout() {
         }}
       />
       <Drawer.Screen
+        name="camera"
+        options={{
+        title: t('camera.title'),
+        drawerLabel: t('camera.title'),
+        }}
+      />
+      <Drawer.Screen
         name="brands"
         options={{
           title: t('menu.brands'),
@@ -60,6 +67,13 @@ export default function RootLayout() {
         options={{
           drawerItemStyle: { display: 'none' },
           title: 'Dev Tools',
+        }}
+      />
+      <Drawer.Screen
+        name="settings"
+        options={{
+          title: t('settings.title'),
+          drawerLabel: t('settings.title'),
         }}
       />
     </Drawer>

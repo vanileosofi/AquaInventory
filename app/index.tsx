@@ -54,8 +54,10 @@ export default function InventoryScreen() {
     const matchFormat = formatFilter === 'all' || c.format === formatFilter;
     const matchBrand = brandFilters.length === 0 || brandFilters.includes(c.brand);
     const formatTranslated = t(`color.format_${c.format}`).toLowerCase();
-    const matchSearch = search.trim() === '' || [c.name, c.brand, c.code, c.series, c.hex, c.notes, formatTranslated]
-      .some(field => field?.toLowerCase().includes(search.toLowerCase()));
+    const searchWords = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const searchFields = [c.name, c.brand, c.code, c.series, c.hex, c.notes, formatTranslated]
+      .map(f => f?.toLowerCase() || '').join(' ');
+    const matchSearch = searchWords.length === 0 || searchWords.every(word => searchFields.includes(word));
     return matchFormat && matchBrand && matchSearch;
   });
 
@@ -148,11 +150,6 @@ export default function InventoryScreen() {
         />
       )}
 
-      {/* Dev Tools */}
-      <TouchableOpacity onPress={() => router.push('/dev-seed' as any)} style={styles.devButton}>
-        <Text style={styles.devButtonText}>Dev Tools</Text>
-      </TouchableOpacity>
-
       {/* Add button */}
       <TouchableOpacity style={styles.addButton} onPress={() => router.push('/add-color')}>
         <Text style={styles.addButtonText}>{t('inventory.add_color')}</Text>
@@ -234,14 +231,12 @@ const styles = StyleSheet.create({
   resultsCount: { fontSize: 12, color: '#999', marginBottom: 6 },
   empty: { flex: 1, textAlign: 'center', textAlignVertical: 'center', color: '#999', fontSize: 16, marginTop: 60 },
   card: { flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 10, borderRadius: 12, backgroundColor: '#f5f5f5' },
-  swatch: { width: 32, height: 48, borderRadius: 6, marginRight: 12 },
+  swatch: { width: 20, height: 48, borderRadius: 4, marginRight: 12 },
   info: { flex: 1 },
   name: { fontSize: 16, fontWeight: '600' },
   brand: { fontSize: 13, color: '#666', marginTop: 2 },
   qty: { fontSize: 22, marginRight: 8 },
   eyeButton: { padding: 4 },
-  devButton: { padding: 8, alignItems: 'center' },
-  devButtonText: { color: '#ccc', fontSize: 12 },
   addButton: { backgroundColor: '#3B44AC', padding: 16, borderRadius: 12, alignItems: 'center', marginVertical: 8 },
   addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
