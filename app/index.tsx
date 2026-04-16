@@ -1,18 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Eye } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FAB from '../components/FAB';
+import QuantityBadge from '../components/QuantityBadge';
 import { Color, getColors } from '../storage/colors';
-
-const QTY_EMOJI: Record<string, string> = {
-  full: '🟢',
-  half: '🟡',
-  low: '🟠',
-  empty: '🔴',
-};
 
 export default function InventoryScreen() {
   const { t } = useTranslation();
@@ -130,7 +124,11 @@ export default function InventoryScreen() {
           onScrollBeginDrag={() => Keyboard.dismiss()}
           contentContainerStyle={{ paddingBottom: 90 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push(`/color-detail?id=${item.id}` as any)}
+              activeOpacity={0.7}
+            >
               <View style={[styles.swatch, { backgroundColor: item.hex }]} />
               <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
@@ -138,16 +136,13 @@ export default function InventoryScreen() {
                   {item.brand} · {t(`color.format_${item.format}`)}
                 </Text>
               </View>
-              <Text style={styles.qty}>
-                {item.inUse ? QTY_EMOJI[item.quantity] : '⬜'}
-              </Text>
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => router.push(`/color-detail?id=${item.id}` as any)}
-              >
-                <Eye size={20} color="#3B44AC" />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.badgeWrap}>
+                <QuantityBadge quantity={item.quantity as any} inUse={item.inUse} />
+              </View>
+              <View style={styles.chevron}>
+                <ChevronRight size={22} color="#ccc" />
+              </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -230,13 +225,14 @@ const styles = StyleSheet.create({
   searchInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 10, fontSize: 15, backgroundColor: '#fafafa', marginBottom: 6 },
   resultsCount: { fontSize: 12, color: '#999', marginBottom: 6 },
   empty: { flex: 1, textAlign: 'center', textAlignVertical: 'center', color: '#999', fontSize: 16, marginTop: 60 },
-  card: { flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 10, borderRadius: 12, backgroundColor: '#f5f5f5' },
-  swatch: { width: 20, height: 48, borderRadius: 4, marginRight: 12 },
-  info: { flex: 1 },
+  card: { flexDirection: 'row', alignItems: 'stretch', paddingVertical: 12, paddingLeft: 12, paddingRight: 0, marginBottom: 10, borderRadius: 12, backgroundColor: '#f5f5f5' },
+  chevron: { alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 },
+  swatch: { width: 20, height: 48, borderRadius: 4, marginRight: 12, alignSelf: 'center' },
+  info: { flex: 1, justifyContent: 'center' },
+  badgeWrap: { alignSelf: 'center', marginLeft: 8, marginRight: 0 },
   name: { fontSize: 16, fontWeight: '600' },
   brand: { fontSize: 13, color: '#666', marginTop: 2 },
   qty: { fontSize: 22, marginRight: 8 },
-  eyeButton: { padding: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: '70%' },
   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
