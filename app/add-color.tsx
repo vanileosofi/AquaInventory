@@ -1,5 +1,6 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,7 +36,13 @@ const QTY_EMOJI: Record<string, string> = {
 
 export default function AddColorScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const scrollRef = useRef<any>(null);
+  const params = useLocalSearchParams<{ name?: string; brand?: string; hex?: string }>();
+
+  useEffect(() => {
+    navigation.setOptions({ title: t('inventory.add_color_title') });
+  }, [navigation, t]);
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -52,8 +59,8 @@ export default function AddColorScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setName('');
-      setBrand('');
+      setName(params.name ?? '');
+      setBrand(params.brand ?? '');
       setCode('');
       setFormat('pan');
       setLightfast(0);
@@ -63,9 +70,9 @@ export default function AddColorScreen() {
       setQuantity('full');
       setSpare(0);
       setNotes('');
-      setHex('#000000');
+      setHex(params.hex ?? '#000000');
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
+    }, [params.name, params.brand, params.hex])
   );
 
   const handleQuantitySelect = (q: string) => {
@@ -287,7 +294,16 @@ export default function AddColorScreen() {
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>{t('color.save')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => {
+            if (params.name || params.brand || params.hex) {
+              router.navigate('/favorites' as any);
+            } else {
+              router.back();
+            }
+          }}
+        >
           <Text style={styles.cancelButtonText}>{t('color.cancel')}</Text>
         </TouchableOpacity>
 

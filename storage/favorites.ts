@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
-export type FavoriteType = 'mix' | 'technical' | 'compatible';
+export type FavoriteType = 'mix' | 'technical' | 'compatible' | 'found' | 'detected';
 
 export interface MixStep {
   colorName: string;
@@ -91,56 +91,71 @@ export async function getItemsForList(listId: string): Promise<FavoriteItem[]> {
 }
 
 /**
- * Resuelve el nombre final del item para evitar duplicados exactos en la lista.
- * Si "Gris Topo" + brand + type ya existe en esa lista, devuelve "Gris Topo (2)",
- * y así sucesivamente.
+ * Determina si un item es duplicado dentro de una lista según las reglas:
+ * - Con marca: mismo hex + misma marca + mismo type.
+ * - Sin marca (mezclas): mismo name + mismo type.
  */
-function resolveItemName(
-  baseName: string,
-  brand: string | undefined,
-  type: FavoriteType,
+export function isDuplicateInList(
+  item: Pick<FavoriteItem, 'hex' | 'name' | 'brand' | 'type'>,
   existingItems: FavoriteItem[]
-): string {
+): boolean {
   const normalize = (s: string) => s.trim().toLowerCase();
-
-  const isDuplicate = (name: string) =>
-    existingItems.some(
+  if (item.brand) {
+    return existingItems.some(
       (i) =>
-        normalize(i.name) === normalize(name) &&
-        (i.brand ?? '') === (brand ?? '') &&
-        i.type === type
+        i.type === item.type &&
+        normalize(i.hex ?? '') === normalize(item.hex ?? '') &&
+        normalize(i.brand ?? '') === normalize(item.brand!)
     );
-
-  if (!isDuplicate(baseName)) return baseName;
-
-  let counter = 2;
-  while (isDuplicate(`${baseName} (${counter})`)) {
-    counter++;
   }
-  return `${baseName} (${counter})`;
+  return existingItems.some(
+    (i) => i.type === item.type && normalize(i.name) === normalize(item.name)
+  );
+}
+
+/**
+ * Devuelve los IDs de las listas donde el item ya existe como duplicado.
+ */
+export async function getListIdsContainingItem(
+  item: Pick<FavoriteItem, 'hex' | 'name' | 'brand' | 'type'>
+): Promise<string[]> {
+  const [lists, allItems] = await Promise.all([getFavoriteLists(), getFavoriteItems()]);
+  return lists
+    .filter((list) => isDuplicateInList(item, allItems.filter((i) => i.listId === list.id)))
+    .map((list) => list.id);
+}
+
+/**
+ * Elimina de una lista el item que coincide con las reglas de duplicado.
+ */
+export async function deleteMatchingItemFromList(
+  listId: string,
+  item: Pick<FavoriteItem, 'hex' | 'name' | 'brand' | 'type'>
+): Promise<void> {
+  const items = await getFavoriteItems();
+  const toDelete = items
+    .filter((i) => i.listId === listId)
+    .filter((i) => isDuplicateInList(item, [i]))
+    .map((i) => i.id);
+  if (toDelete.length === 0) return;
+  await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(items.filter((i) => !toDelete.includes(i.id))));
 }
 
 /**
  * Guarda un item en una lista.
- * Aplica la regla de nombres para evitar duplicados exactos en esa lista.
+ * Si el item ya existe como duplicado en esa lista, lo omite silenciosamente.
  */
 export async function saveItemToList(
   listId: string,
   item: Omit<FavoriteItem, 'id' | 'listId' | 'savedAt' | 'notes'>
-): Promise<FavoriteItem> {
+): Promise<FavoriteItem | null> {
   const items = await getFavoriteItems();
   const itemsInList = items.filter((i) => i.listId === listId);
 
-  const resolvedName = resolveItemName(
-    item.name,
-    item.brand,
-    item.type,
-    itemsInList
-  );
+  if (isDuplicateInList(item, itemsInList)) return null;
 
   const newItem: FavoriteItem = {
     ...item,
-    name: resolvedName,
     id: Date.now().toString(),
     listId,
     notes: '',
@@ -153,7 +168,8 @@ export async function saveItemToList(
 
 /**
  * Guarda el mismo item en múltiples listas a la vez (desde el modal de estrella).
- * Cada lista recibe su propio registro independiente.
+ * Omite silenciosamente las listas donde el item ya existe como duplicado.
+ * Devuelve solo los items efectivamente guardados.
  */
 export async function saveItemToLists(
   listIds: string[],
@@ -165,20 +181,14 @@ export async function saveItemToLists(
   for (const listId of listIds) {
     const itemsInList = [
       ...allItems.filter((i) => i.listId === listId),
-      ...newItems.filter((i) => i.listId === listId), // los que acabamos de crear en este loop
+      ...newItems.filter((i) => i.listId === listId),
     ];
 
-    const resolvedName = resolveItemName(
-      item.name,
-      item.brand,
-      item.type,
-      itemsInList
-    );
+    if (isDuplicateInList(item, itemsInList)) continue;
 
     const newItem: FavoriteItem = {
       ...item,
-      name: resolvedName,
-      id: `${Date.now()}_${listId}`, // garantiza ID único si se guarda en varias listas al mismo tiempo
+      id: `${Date.now()}_${listId}`,
       listId,
       notes: '',
       savedAt: Date.now(),
@@ -187,10 +197,12 @@ export async function saveItemToLists(
     newItems.push(newItem);
   }
 
-  await AsyncStorage.setItem(
-    ITEMS_KEY,
-    JSON.stringify([...allItems, ...newItems])
-  );
+  if (newItems.length > 0) {
+    await AsyncStorage.setItem(
+      ITEMS_KEY,
+      JSON.stringify([...allItems, ...newItems])
+    );
+  }
   return newItems;
 }
 

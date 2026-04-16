@@ -1,8 +1,10 @@
-import { CheckCircle, FlaskConical, RotateCcw, ShoppingBag } from 'lucide-react-native';
-import React from 'react';
+import { CheckCircle, FlaskConical, RotateCcw, ShoppingBag, Star } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MixStep as FavMixStep, getListIdsContainingItem } from '../../storage/favorites';
 import { BuyOption, CameraAnalysis, InventoryMatch, MixStep } from '../../services/geminiVision';
+import SaveToListModal, { SavePayload } from '../favorites/SaveToListModal';
 
 interface Props {
   analysis: CameraAnalysis;
@@ -13,6 +15,59 @@ interface Props {
 export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
   const { t } = useTranslation();
   const { result, inventoryMatches, status } = analysis;
+  const [savePayload, setSavePayload] = useState<SavePayload | null>(null);
+  const [savedTypes, setSavedTypes] = useState<Set<string>>(new Set());
+
+  const refreshSavedTypes = useCallback(async () => {
+    const checks: Array<[string, Parameters<typeof getListIdsContainingItem>[0]]> = [
+      ['detected', { type: 'detected', hex: result.hex || '#000000', name: result.name || '—', brand: result.brand ?? undefined }],
+    ];
+    if (result.mix_recipe?.length) {
+      checks.push(['mix', { type: 'mix', hex: result.hex || '#000000', name: result.name || '—', brand: undefined }]);
+    }
+    if (result.buy_technical) {
+      checks.push(['technical', { type: 'technical', hex: result.buy_technical.hex, name: result.buy_technical.name, brand: result.buy_technical.brand }]);
+    }
+    if (result.buy_compatible) {
+      checks.push(['compatible', { type: 'compatible', hex: result.buy_compatible.hex, name: result.buy_compatible.name, brand: result.buy_compatible.brand }]);
+    }
+    const saved = new Set<string>();
+    for (const [type, payload] of checks) {
+      const ids = await getListIdsContainingItem(payload);
+      if (ids.length > 0) saved.add(type);
+    }
+    setSavedTypes(saved);
+  }, [result]);
+
+  useEffect(() => {
+    refreshSavedTypes();
+  }, [refreshSavedTypes]);
+
+  const buildDetectedPayload = (): SavePayload => ({
+    type: 'detected',
+    hex: result.hex || '#000000',
+    name: result.name || '—',
+    brand: result.brand ?? undefined,
+  });
+
+  const buildMixPayload = (): SavePayload => ({
+    type: 'mix',
+    hex: result.hex || '#000000',
+    name: result.name || '—',
+    brand: undefined,
+    mix_recipe: result.mix_recipe?.map((step): FavMixStep => ({
+      colorName: step.name,
+      hex: step.hex,
+      proportion: `${step.parts}p`,
+    })),
+  });
+
+  const buildBuyPayload = (option: BuyOption, type: 'technical' | 'compatible'): SavePayload => ({
+    type,
+    hex: option.hex || '#000000',
+    name: option.name,
+    brand: option.brand,
+  });
 
   return (
     <View style={styles.container}>
@@ -32,6 +87,10 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
                 {result.number ? `  ·  ${result.number}` : ''}
               </Text>
             </View>
+            <StarButton
+              saved={savedTypes.has('detected')}
+              onPress={() => setSavePayload(buildDetectedPayload())}
+            />
           </View>
           <View style={styles.hexBadge}>
             <Text style={styles.hexText}>{result.hex || '—'}</Text>
@@ -45,13 +104,23 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
       {/* Coincidencias en inventario */}
       {inventoryMatches.length > 0 && (
         <Section title={t('camera.inventory_matches')}>
-          {inventoryMatches.map(m => <MatchRow key={m.id} match={m} t={t} />)}
+          {inventoryMatches.map(m => (
+            <MatchRow key={m.id} match={m} t={t} />
+          ))}
         </Section>
       )}
 
       {/* Receta de mezcla — siempre que exista */}
       {result.mix_recipe && result.mix_recipe.length > 0 && (
-        <Section title={t('camera.mix_recipe')}>
+        <Section
+          title={t('camera.mix_recipe')}
+          rightAction={
+            <StarButton
+              saved={savedTypes.has('mix')}
+              onPress={() => setSavePayload(buildMixPayload())}
+            />
+          }
+        >
           <MixRecipe steps={result.mix_recipe} />
         </Section>
       )}
@@ -60,10 +129,20 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
       {(result.buy_technical || result.buy_compatible) && (
         <Section title={t('camera.buy_title')}>
           {result.buy_technical && (
-            <BuyCard tag={t('camera.buy_technical')} option={result.buy_technical} />
+            <BuyCard
+              tag={t('camera.buy_technical')}
+              option={result.buy_technical}
+              saved={savedTypes.has('technical')}
+              onSave={() => setSavePayload(buildBuyPayload(result.buy_technical!, 'technical'))}
+            />
           )}
           {result.buy_compatible && (
-            <BuyCard tag={t('camera.buy_compatible')} option={result.buy_compatible} />
+            <BuyCard
+              tag={t('camera.buy_compatible')}
+              option={result.buy_compatible}
+              saved={savedTypes.has('compatible')}
+              onSave={() => setSavePayload(buildBuyPayload(result.buy_compatible!, 'compatible'))}
+            />
           )}
         </Section>
       )}
@@ -82,11 +161,30 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
         <Text style={styles.resetBtnLabel}>{t('camera.new_photo')}</Text>
       </TouchableOpacity>
 
+      {/* Modal de guardar en lista */}
+      <SaveToListModal
+        visible={savePayload !== null}
+        item={savePayload}
+        onClose={() => { setSavePayload(null); refreshSavedTypes(); }}
+      />
+
     </View>
   );
 }
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function StarButton({ onPress, saved }: { onPress: () => void; saved?: boolean }) {
+  return (
+    <TouchableOpacity
+      style={styles.starBtn}
+      onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Star size={16} color={saved ? '#F5A623' : '#3B44AC'} fill={saved ? '#F5A623' : 'none'} />
+    </TouchableOpacity>
+  );
+}
 
 function StatusBanner({ status, t }: { status: string; t: any }) {
   const config: Record<string, { icon: React.ReactNode; bg: string; border: string; title: string; desc: string }> = {
@@ -124,10 +222,21 @@ function StatusBanner({ status, t }: { status: string; t: any }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  rightAction,
+}: {
+  title: string;
+  children: React.ReactNode;
+  rightAction?: React.ReactNode;
+}) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {rightAction}
+      </View>
       <View style={styles.sectionBody}>{children}</View>
     </View>
   );
@@ -169,10 +278,13 @@ function MixRecipe({ steps }: { steps: MixStep[] }) {
   );
 }
 
-function BuyCard({ tag, option }: { tag: string; option: BuyOption }) {
+function BuyCard({ tag, option, onSave, saved }: { tag: string; option: BuyOption; onSave?: () => void; saved?: boolean }) {
   return (
     <View style={styles.buyCard}>
-      <Text style={styles.buyTag}>{tag}</Text>
+      <View style={styles.buyTagRow}>
+        <Text style={styles.buyTag}>{tag}</Text>
+        {onSave && <StarButton onPress={onSave} saved={saved} />}
+      </View>
       <View style={styles.buySwatchRow}>
         <View style={[styles.buySwatch, { backgroundColor: option.hex || '#ccc' }]} />
         <View style={styles.buyMeta}>
@@ -254,15 +366,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fafafa',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  sectionTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+  },
+  starBtn: {
+    padding: 4,
   },
 
   sectionBody: { padding: 12, gap: 2 },
@@ -305,14 +425,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#fafafa',
   },
- buyTag: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#444',
-  paddingBottom: 8,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
+  buyTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  buyTag: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+    flex: 1,
+  },
   buySwatchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   buySwatch: {
     width: 36,

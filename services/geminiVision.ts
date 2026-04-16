@@ -1,5 +1,6 @@
-import { getApiKey } from '../storage/apikey';
+import { getApiKey, getModel } from '../storage/apikey';
 import { getColors } from '../storage/colors';
+import { AppError, parseGeminiError, parseGeminiParseError } from './errorHandler';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -121,7 +122,7 @@ export async function analyzeColorImage(
   lang: string
 ): Promise<CameraAnalysis> {
   const apiKey = await getApiKey();
-  if (!apiKey) throw new Error('NO_API_KEY');
+  if (!apiKey) throw { code: 'NO_API_KEY' } as AppError;
 
   const inventory = await getColors();
   const inventoryHexes = inventory
@@ -131,55 +132,46 @@ export async function analyzeColorImage(
 
   const prompt = buildPrompt(lang, inventoryHexes);
 
-  // Gemini Model
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-     
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64Image,
-              },
-            },
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 8192,
-      },
-    }),
-  });
+  const model = await getModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inline_data: { mime_type: mimeType, data: base64Image } },
+              { text: prompt },
+            ],
+          },
+        ],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+      }),
+    });
+  } catch {
+    throw { code: 'NETWORK_ERROR' } as AppError;
+  }
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const msg = (err as any)?.error?.message || `HTTP ${response.status}`;
-    if (response.status === 400 && msg.includes('API_KEY')) throw new Error('INVALID_API_KEY');
-    if (response.status === 403) throw new Error('INVALID_API_KEY');
-    throw new Error(msg);
+    throw await parseGeminiError(response);
   }
 
   const data = await response.json();
+  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
-  const text: string =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
-  if (!text) throw new Error('Empty response from Gemini');
+  if (!text) throw parseGeminiParseError();
 
   const clean = text.replace(/```json\s*|```/gi, '').trim();
-  console.log('GEMINI RESPONSE:', clean); // ← agregar esta línea
-  const result: AnalysisResult = JSON.parse(clean);
+  let result: AnalysisResult;
+  try {
+    result = JSON.parse(clean);
+  } catch {
+    throw parseGeminiParseError();
+  }
 
   // Calcular coincidencias con inventario
   const matches: InventoryMatch[] = inventory

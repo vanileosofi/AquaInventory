@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FAB from '../components/FAB';
 import { Color, getColors } from '../storage/colors';
 
 const QTY_EMOJI: Record<string, string> = {
@@ -127,6 +128,7 @@ export default function InventoryScreen() {
           data={filtered}
           keyExtractor={(item) => item.id}
           onScrollBeginDrag={() => Keyboard.dismiss()}
+          contentContainerStyle={{ paddingBottom: 90 }}
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={[styles.swatch, { backgroundColor: item.hex }]} />
@@ -150,10 +152,8 @@ export default function InventoryScreen() {
         />
       )}
 
-      {/* Add button */}
-      <TouchableOpacity style={styles.addButton} onPress={() => router.push('/add-color')}>
-        <Text style={styles.addButtonText}>{t('inventory.add_color')}</Text>
-      </TouchableOpacity>
+      {/* FAB */}
+      <FAB />
 
       {/* Format Modal */}
       <Modal visible={showFormatModal} animationType="slide" transparent onRequestClose={() => setShowFormatModal(false)}>
@@ -237,8 +237,6 @@ const styles = StyleSheet.create({
   brand: { fontSize: 13, color: '#666', marginTop: 2 },
   qty: { fontSize: 22, marginRight: 8 },
   eyeButton: { padding: 4 },
-  addButton: { backgroundColor: '#3B44AC', padding: 16, borderRadius: 12, alignItems: 'center', marginVertical: 8 },
-  addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: '70%' },
   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },

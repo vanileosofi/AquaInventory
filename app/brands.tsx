@@ -9,6 +9,9 @@ import { showConfirm, showError } from '../utils/alert';
 
 const BRANDS_KEY = 'aqua_brands';
 
+const toTitleCase = (str: string) =>
+  str.trim().replace(/\b\w/g, c => c.toUpperCase());
+
 export default function BrandsScreen() {
   const { t } = useTranslation();
   const [brands, setBrands] = useState<string[]>([]);
@@ -40,7 +43,7 @@ export default function BrandsScreen() {
     : brands;
 
   const handleAdd = async () => {
-    const trimmed = newBrand.trim();
+    const trimmed = toTitleCase(newBrand);
     if (!trimmed) return;
     const exists = brands.some(b => b.toLowerCase() === trimmed.toLowerCase());
     if (exists) {
@@ -71,7 +74,7 @@ export default function BrandsScreen() {
 
   const handleEditSave = async () => {
     if (!editingValue.trim() || editingIndex === null) return;
-    const trimmed = editingValue.trim();
+    const trimmed = toTitleCase(editingValue);
     const exists = brands.some((b, i) => b.toLowerCase() === trimmed.toLowerCase() && i !== editingIndex);
     if (exists) {
       showError(t('brand.already_exists'));
