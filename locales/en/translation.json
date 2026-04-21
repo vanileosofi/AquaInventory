@@ -23,7 +23,17 @@
    "filter_pan": "Pans",
    "filter_tube": "Tubes",
    "filter_brands_selected": "brands",
-   "clear_filters": "Clear filters"
+   "clear_filters": "Clear filters",
+   "filter_quantity": "Quantity",
+   "sort_by": "Sort by",
+   "sort_name_asc": "Name A→Z",
+   "sort_name_desc": "Name Z→A",
+   "sort_brand_asc": "Brand A→Z",
+   "sort_brand_desc": "Brand Z→A",
+   "sort_format_asc": "Pans first",
+   "sort_format_desc": "Tubes first",
+   "sort_quantity_asc": "Full first",
+   "sort_quantity_desc": "Empty first"
   },
   "color": {
     "name": "Color name",
@@ -100,7 +110,6 @@
   },
   "camera": {
     "title": "Recognition",
-    "subtitle": "Photograph a tube, pan, or color swatch. AI will identify it and search your inventory.",
     "take_photo": "Take photo",
     "choose_gallery": "Choose from gallery",
     "change_image": "Change image",
@@ -134,7 +143,7 @@
     "error_network": "No connection. Check your network and try again.",
     "error_parse": "AI returned an unexpected response. Try with a different image.",
     "error_generic": "Unexpected error. You can retry.",
-    "hint_subjects": "You can photograph a tube, pan, or color swatch",
+    "hint_subjects": "Photograph a tube, pan, or color swatch. AI will identify it and search your inventory.",
     "hint_light": "Better lighting = better results"
   },
   "fab": {
@@ -162,7 +171,8 @@
     "rename_list": "Rename",
     "rename_placeholder": "List name...",
     "list_name_required": "Enter a list name.",
-    "already_saved": "Already saved"
+    "already_saved": "Already saved",
+    "name_required": "Cannot save: the color has no identified name."
   },
   "color_ai": {
     "search_button": "Search color with AI",

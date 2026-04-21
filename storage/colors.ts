@@ -94,6 +94,17 @@ export async function exportColors(): Promise<boolean> {
   }
 }
 
+export async function migrateQuantityFix(): Promise<void> {
+  const colors = await getColors();
+  const fixed = colors.map(c => {
+    if (!c.inUse && c.quantity === 'empty') {
+      return { ...c, quantity: 'full' as const, updatedAt: Date.now() };
+    }
+    return c;
+  });
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(fixed));
+}
+
 export async function importColors(mode: 'replace' | 'merge'): Promise<boolean> {
   try {
     const result = await DocumentPicker.getDocumentAsync({

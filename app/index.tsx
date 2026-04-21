@@ -1,25 +1,31 @@
 import { router, useFocusEffect } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ArrowUpDown, ChevronRight } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FAB from '../components/FAB';
 import QuantityBadge from '../components/QuantityBadge';
 import { Color, getColors } from '../storage/colors';
 
 export default function InventoryScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [colors, setColors] = useState<Color[]>([]);
   const [search, setSearch] = useState('');
   const [formatFilter, setFormatFilter] = useState<'all' | 'pan' | 'tube'>('all');
   const [brandFilters, setBrandFilters] = useState<string[]>([]);
+  const [quantityFilter, setQuantityFilter] = useState<'all' | 'full' | 'half' | 'low' | 'empty'>('all');
   const [showFormatModal, setShowFormatModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [sortKey, setSortKey] = useState<'name' | 'brand' | 'format' | 'quantity'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [showSortModal, setShowSortModal] = useState(false);
 
   const loadColors = async () => {
     const data = await getColors();
-    setColors(data.sort((a, b) => a.name.localeCompare(b.name)));
+    setColors(data);
   };
 
   useFocusEffect(
@@ -30,11 +36,12 @@ export default function InventoryScreen() {
 
   const brands = Array.from(new Set(colors.map(c => c.brand).filter(Boolean))).sort();
 
-  const hasFilters = formatFilter !== 'all' || brandFilters.length > 0 || search.trim() !== '';
+  const hasFilters = formatFilter !== 'all' || brandFilters.length > 0 || quantityFilter !== 'all' || search.trim() !== '';
 
   const clearFilters = () => {
     setFormatFilter('all');
     setBrandFilters([]);
+    setQuantityFilter('all');
     setSearch('');
     Keyboard.dismiss();
   };
@@ -48,12 +55,13 @@ export default function InventoryScreen() {
   const filtered = colors.filter(c => {
     const matchFormat = formatFilter === 'all' || c.format === formatFilter;
     const matchBrand = brandFilters.length === 0 || brandFilters.includes(c.brand);
+    const matchQuantity = quantityFilter === 'all' || c.quantity === quantityFilter;
     const formatTranslated = t(`color.format_${c.format}`).toLowerCase();
     const searchWords = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const searchFields = [c.name, c.brand, c.code, c.series, c.hex, c.notes, formatTranslated]
       .map(f => f?.toLowerCase() || '').join(' ');
     const matchSearch = searchWords.length === 0 || searchWords.every(word => searchFields.includes(word));
-    return matchFormat && matchBrand && matchSearch;
+    return matchFormat && matchBrand && matchQuantity && matchSearch;
   });
 
   const formatLabel = formatFilter === 'all' ? t('inventory.filter_format') :
@@ -62,8 +70,32 @@ export default function InventoryScreen() {
   const brandLabel = brandFilters.length === 0 ? t('inventory.filter_brand') :
     brandFilters.length === 1 ? brandFilters[0] : `${brandFilters.length} ${t('inventory.filter_brands_selected')}`;
 
+  const quantityLabel = quantityFilter === 'all' ? t('inventory.filter_quantity') : t(`quantity.${quantityFilter}`);
+
+  const quantityOrder: Record<string, number> = { full: 0, half: 1, low: 2, empty: 3 };
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortKey === 'name') {
+      return sortDir === 'asc'
+        ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        : b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+    }
+    if (sortKey === 'brand') {
+      return sortDir === 'asc'
+        ? a.brand.localeCompare(b.brand, undefined, { sensitivity: 'base' })
+        : b.brand.localeCompare(a.brand, undefined, { sensitivity: 'base' });
+    }
+    let valA: string | number = '';
+    let valB: string | number = '';
+    if (sortKey === 'format') { valA = a.format; valB = b.format; }
+    if (sortKey === 'quantity') { valA = quantityOrder[a.quantity]; valB = quantityOrder[b.quantity]; }
+    if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
 
       {/* Title row */}
       <View style={styles.titleRow}>
@@ -71,31 +103,70 @@ export default function InventoryScreen() {
         <Text style={styles.colorCount}>Total: {colors.length}</Text>
       </View>
 
+      {/* Results count + clear */}
+      {hasFilters && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <TouchableOpacity onPress={clearFilters}>
+            <Text style={styles.clearButtonText}>{t('inventory.clear_filters')}</Text>
+          </TouchableOpacity>
+          <Text style={styles.resultsCount}>{filtered.length} / {colors.length}</Text>
+        </View>
+      )}
+
       {/* Filter buttons */}
       <View style={styles.filtersRow}>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
         <TouchableOpacity
           style={[styles.filterButton, formatFilter !== 'all' && styles.filterButtonActive]}
-          onPress={() => setShowFormatModal(true)}
+          onPress={() => {
+            if (formatFilter !== 'all') {
+              setFormatFilter('all');
+            } else {
+              setShowFormatModal(true);
+            }
+          }}
         >
           <Text style={[styles.filterButtonText, formatFilter !== 'all' && styles.filterButtonTextActive]}>
-            {formatLabel}
+            {formatFilter !== 'all' ? `${formatLabel} ×` : formatLabel}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterButton, brandFilters.length > 0 && styles.filterButtonActive]}
-          onPress={() => setShowBrandModal(true)}
+          onPress={() => {
+            if (brandFilters.length > 0) {
+              setBrandFilters([]);
+            } else {
+              setShowBrandModal(true);
+            }
+          }}
         >
           <Text style={[styles.filterButtonText, brandFilters.length > 0 && styles.filterButtonTextActive]}>
-            {brandLabel}
+            {brandFilters.length > 0 ? `${brandLabel} ×` : brandLabel}
           </Text>
         </TouchableOpacity>
 
-        {hasFilters && (
-          <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-            <Text style={styles.clearButtonText}>{t('inventory.clear_filters')}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.filterButton, quantityFilter !== 'all' && styles.filterButtonActive]}
+          onPress={() => {
+            if (quantityFilter !== 'all') {
+              setQuantityFilter('all');
+            } else {
+              setShowQuantityModal(true);
+            }
+          }}
+        >
+          <Text style={[styles.filterButtonText, quantityFilter !== 'all' && styles.filterButtonTextActive]}>
+            {quantityFilter !== 'all' ? `${quantityLabel} ×` : quantityLabel}
+          </Text>
+        </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={[styles.filterButton, styles.filterButtonActive]}
+          onPress={() => setShowSortModal(true)}
+        >
+          <ArrowUpDown size={15} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Search bar */}
@@ -109,20 +180,15 @@ export default function InventoryScreen() {
         onSubmitEditing={() => Keyboard.dismiss()}
       />
 
-      {/* Results count */}
-      {hasFilters && (
-        <Text style={styles.resultsCount}>{filtered.length} / {colors.length}</Text>
-      )}
-
       {/* List */}
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <Text style={styles.empty}>{t('inventory.empty')}</Text>
       ) : (
         <FlatList
-          data={filtered}
+          data={sorted}
           keyExtractor={(item) => item.id}
           onScrollBeginDrag={() => Keyboard.dismiss()}
-          contentContainerStyle={{ paddingBottom: 90 }}
+          contentContainerStyle={{ paddingBottom: 50 + insets.bottom }}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.card}
@@ -155,14 +221,14 @@ export default function InventoryScreen() {
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowFormatModal(false)}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>{t('inventory.filter_format')}</Text>
-            {(['all', 'pan', 'tube'] as const).map(f => (
+            {(['pan', 'tube'] as const).map(f => (
               <TouchableOpacity
                 key={f}
                 style={styles.modalOption}
                 onPress={() => { setFormatFilter(f); setShowFormatModal(false); }}
               >
                 <Text style={[styles.modalOptionText, formatFilter === f && styles.modalOptionTextActive]}>
-                  {f === 'all' ? t('inventory.filter_all') : f === 'pan' ? t('inventory.filter_pan') : t('inventory.filter_tube')}
+                  {f === 'pan' ? t('inventory.filter_pan') : t('inventory.filter_tube')}
                 </Text>
                 {formatFilter === f && <Text style={styles.checkmark}>✓</Text>}
               </TouchableOpacity>
@@ -177,15 +243,6 @@ export default function InventoryScreen() {
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>{t('inventory.filter_brand')}</Text>
             <ScrollView>
-              <TouchableOpacity
-                style={styles.modalOption}
-                onPress={() => setBrandFilters([])}
-              >
-                <Text style={[styles.modalOptionText, brandFilters.length === 0 && styles.modalOptionTextActive]}>
-                  {t('inventory.filter_all')}
-                </Text>
-                {brandFilters.length === 0 && <Text style={styles.checkmark}>✓</Text>}
-              </TouchableOpacity>
               {brands.map(b => (
                 <TouchableOpacity
                   key={b}
@@ -206,6 +263,57 @@ export default function InventoryScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Sort Modal */}
+      <Modal visible={showSortModal} animationType="slide" transparent onRequestClose={() => setShowSortModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowSortModal(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>{t('inventory.sort_by')}</Text>
+            {([
+              { key: 'name', dir: 'asc', label: t('inventory.sort_name_asc') },
+              { key: 'name', dir: 'desc', label: t('inventory.sort_name_desc') },
+              { key: 'brand', dir: 'asc', label: t('inventory.sort_brand_asc') },
+              { key: 'brand', dir: 'desc', label: t('inventory.sort_brand_desc') },
+              { key: 'format', dir: 'asc', label: t('inventory.sort_format_asc') },
+              { key: 'format', dir: 'desc', label: t('inventory.sort_format_desc') },
+              { key: 'quantity', dir: 'asc', label: t('inventory.sort_quantity_asc') },
+              { key: 'quantity', dir: 'desc', label: t('inventory.sort_quantity_desc') },
+            ] as const).map(option => (
+              <TouchableOpacity
+                key={`${option.key}-${option.dir}`}
+                style={styles.modalOption}
+                onPress={() => { setSortKey(option.key); setSortDir(option.dir); setShowSortModal(false); }}
+              >
+                <Text style={[styles.modalOptionText, sortKey === option.key && sortDir === option.dir && styles.modalOptionTextActive]}>
+                  {option.label}
+                </Text>
+                {sortKey === option.key && sortDir === option.dir && <Text style={styles.checkmark}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Quantity Modal */}
+      <Modal visible={showQuantityModal} animationType="slide" transparent onRequestClose={() => setShowQuantityModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowQuantityModal(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>{t('inventory.filter_quantity')}</Text>
+            {(['full', 'half', 'low', 'empty'] as const).map(q => (
+              <TouchableOpacity
+                key={q}
+                style={styles.modalOption}
+                onPress={() => { setQuantityFilter(q); setShowQuantityModal(false); }}
+              >
+                <Text style={[styles.modalOptionText, quantityFilter === q && styles.modalOptionTextActive]}>
+                  {t(`quantity.${q}`)}
+                </Text>
+                {quantityFilter === q && <Text style={styles.checkmark}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -215,12 +323,11 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 8 },
   title: { fontSize: 24, fontWeight: 'bold', lineHeight: 28 },
   colorCount: { fontSize: 18, fontWeight: '600', color: '#000000' },
-  filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
+  filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 10, justifyContent: 'space-between' },
   filterButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#ddd', backgroundColor: '#f5f5f5' },
   filterButtonActive: { backgroundColor: '#3B44AC', borderColor: '#3B44AC' },
   filterButtonText: { fontSize: 13, color: '#555', fontWeight: '500' },
   filterButtonTextActive: { color: '#fff', fontWeight: '600' },
-  clearButton: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#ff4444', backgroundColor: '#fff' },
   clearButtonText: { fontSize: 13, color: '#ff4444', fontWeight: '500' },
   searchInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 10, fontSize: 15, backgroundColor: '#fafafa', marginBottom: 6 },
   resultsCount: { fontSize: 12, color: '#999', marginBottom: 6 },

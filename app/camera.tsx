@@ -154,8 +154,6 @@ export default function CameraScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-        <Text style={styles.subtitle}>{t('camera.subtitle')}</Text>
-
         {/* Loading */}
         {loading && (
           <View style={styles.loadingBox}>
@@ -167,6 +165,10 @@ export default function CameraScreen() {
         {/* Pick buttons + hints — only when idle */}
         {!loading && !analysis && !error && (
           <>
+            <View style={styles.hintsBox}>
+              <Text style={styles.hintsRow}>📷  {t('camera.hint_subjects')}</Text>
+              <Text style={styles.hintsRow}>💡  {t('camera.hint_light')}</Text>
+            </View>
             <View style={styles.pickZone}>
               <TouchableOpacity style={styles.pickBtn} onPress={pickFromCamera}>
                 <Camera size={26} color="#3B44AC" />
@@ -177,10 +179,6 @@ export default function CameraScreen() {
                 <ImageIcon size={26} color="#3B44AC" />
                 <Text style={styles.pickBtnLabel}>{t('camera.choose_gallery')}</Text>
               </TouchableOpacity>
-            </View>
-            <View style={styles.hintsBox}>
-              <Text style={styles.hintsRow}>📷  {t('camera.hint_subjects')}</Text>
-              <Text style={styles.hintsRow}>💡  {t('camera.hint_light')}</Text>
             </View>
           </>
         )}
@@ -240,7 +238,7 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { padding: 16, gap: 14 },
-  subtitle: { fontSize: 14, color: '#888', lineHeight: 20 },
+
   pickZone: {
     flexDirection: 'row',
     borderWidth: 1,

@@ -9,9 +9,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function FAB() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
 
@@ -50,7 +52,7 @@ export default function FAB() {
       )}
 
       {/* FAB stack anchored bottom-right */}
-      <View style={styles.fabStack} pointerEvents="box-none">
+      <View style={[styles.fabStack, { bottom: 24 + insets.bottom }]} pointerEvents="box-none">
 
         {/* Secondary buttons rendered top → bottom (reversed so Gallery is farthest from FAB) */}
         {expanded &&
@@ -89,7 +91,6 @@ const styles = StyleSheet.create({
   },
   fabStack: {
     position: 'absolute',
-    bottom: 24,
     right: 20,
     alignItems: 'flex-end',
     gap: 12,

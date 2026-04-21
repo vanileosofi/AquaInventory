@@ -74,6 +74,7 @@ export default function SaveToListModal({ visible, item, onClose, onSaved }: Pro
     const newList = await createFavoriteList(name);
     setLists(prev => [...prev, newList]);
     setSelectedIds(prev => [...prev, newList.id]);
+    setUserHasInteracted(true);
     setNewListName('');
     setShowNewInput(false);
   };

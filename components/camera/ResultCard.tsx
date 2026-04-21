@@ -1,7 +1,7 @@
 import { CheckCircle, FlaskConical, RotateCcw, ShoppingBag, Star } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MixStep as FavMixStep, getListIdsContainingItem } from '../../storage/favorites';
 import { BuyOption, CameraAnalysis, InventoryMatch, MixStep } from '../../services/geminiVision';
 import SaveToListModal, { SavePayload } from '../favorites/SaveToListModal';
@@ -69,6 +69,14 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
     brand: option.brand,
   });
 
+  const openSaveModal = (payload: SavePayload) => {
+    if (!payload.name || payload.name === '—') {
+      Alert.alert(t('common.error'), t('favorites.name_required'));
+      return;
+    }
+    setSavePayload(payload);
+  };
+
   return (
     <View style={styles.container}>
 
@@ -89,7 +97,7 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
             </View>
             <StarButton
               saved={savedTypes.has('detected')}
-              onPress={() => setSavePayload(buildDetectedPayload())}
+              onPress={() => openSaveModal(buildDetectedPayload())}
             />
           </View>
           <View style={styles.hexBadge}>
@@ -117,7 +125,7 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
           rightAction={
             <StarButton
               saved={savedTypes.has('mix')}
-              onPress={() => setSavePayload(buildMixPayload())}
+              onPress={() => openSaveModal(buildMixPayload())}
             />
           }
         >
@@ -133,7 +141,7 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
               tag={t('camera.buy_technical')}
               option={result.buy_technical}
               saved={savedTypes.has('technical')}
-              onSave={() => setSavePayload(buildBuyPayload(result.buy_technical!, 'technical'))}
+              onSave={() => openSaveModal(buildBuyPayload(result.buy_technical!, 'technical'))}
             />
           )}
           {result.buy_compatible && (
@@ -141,7 +149,7 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
               tag={t('camera.buy_compatible')}
               option={result.buy_compatible}
               saved={savedTypes.has('compatible')}
-              onSave={() => setSavePayload(buildBuyPayload(result.buy_compatible!, 'compatible'))}
+              onSave={() => openSaveModal(buildBuyPayload(result.buy_compatible!, 'compatible'))}
             />
           )}
         </Section>
