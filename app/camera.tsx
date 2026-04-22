@@ -56,7 +56,7 @@ export default function CameraScreen() {
     return () => clearTimeout(id);
   }, [retryCountdown]);
 
-  const checkApiKey = async () => {
+  const checkApiKey = useCallback(async () => {
     const apiKey = await getApiKey();
     if (!apiKey) {
       Alert.alert(
@@ -70,7 +70,7 @@ export default function CameraScreen() {
       return false;
     }
     return true;
-  };
+  }, [t, router]);
 
   const runAnalysis = useCallback(async (captured: CapturedImage) => {
     setLastImage(captured);
@@ -86,7 +86,7 @@ export default function CameraScreen() {
     } finally {
       setLoading(false);
     }
-  }, [i18n.language, t]);
+  }, [i18n.language]);
 
   const pickFromCamera = useCallback(async () => {
     if (!(await checkApiKey())) return;
@@ -108,7 +108,7 @@ export default function CameraScreen() {
         uri: result.assets[0].uri,
       });
     }
-  }, [t, runAnalysis]);
+  }, [t, runAnalysis, checkApiKey]);
 
   const pickFromGallery = useCallback(async () => {
     if (!(await checkApiKey())) return;
@@ -126,7 +126,7 @@ export default function CameraScreen() {
         uri: result.assets[0].uri,
       });
     }
-  }, [runAnalysis]);
+  }, [runAnalysis, checkApiKey]);
 
   // Auto-trigger picker when navigating from FAB (ts changes on every FAB press)
   useEffect(() => {

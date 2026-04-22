@@ -19,7 +19,7 @@ export default function ResultCard({ analysis, croppedUri, onReset }: Props) {
   const [savedTypes, setSavedTypes] = useState<Set<string>>(new Set());
 
   const refreshSavedTypes = useCallback(async () => {
-    const checks: Array<[string, Parameters<typeof getListIdsContainingItem>[0]]> = [
+    const checks: [string, Parameters<typeof getListIdsContainingItem>[0]][] = [
       ['detected', { type: 'detected', hex: result.hex || '#000000', name: result.name || '—', brand: result.brand ?? undefined }],
     ];
     if (result.mix_recipe?.length) {

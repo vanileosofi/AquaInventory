@@ -53,7 +53,7 @@ export default function ColorDetailScreen() {
   const [notes, setNotes] = useState('');
   const [hex, setHex] = useState('#000000');
 
-  const loadColor = async () => {
+  const loadColor = useCallback(async () => {
     const colors = await getColors();
     const found = colors.find(c => c.id === id);
     if (found) {
@@ -71,13 +71,13 @@ export default function ColorDetailScreen() {
       setNotes(found.notes);
       setHex(found.hex);
     }
-  };
+  }, [id]);
 
   useFocusEffect(
     useCallback(() => {
       loadColor();
       setEditing(false);
-    }, [id])
+    }, [loadColor])
   );
 
   const handleDelete = () => {
