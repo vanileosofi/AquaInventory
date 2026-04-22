@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getApiKey } from '../storage/apikey';
 
 interface ColorSuggestion {
@@ -19,6 +20,7 @@ interface Props {
 
 export default function ColorAISearch({ name, brand, code, onSelect, buttonLabel }: Props) {
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [suggestions, setSuggestions] = useState<ColorSuggestion[]>([]);
@@ -131,7 +133,7 @@ Respond ONLY with a JSON array, no backticks or extra text:
 
       <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('color_ai.modal_title')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>

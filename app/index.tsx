@@ -68,7 +68,9 @@ export default function InventoryScreen() {
     formatFilter === 'pan' ? t('inventory.filter_pan') : t('inventory.filter_tube');
 
   const brandLabel = brandFilters.length === 0 ? t('inventory.filter_brand') :
-    brandFilters.length === 1 ? brandFilters[0] : `${brandFilters.length} ${t('inventory.filter_brands_selected')}`;
+    brandFilters.length === 1
+      ? (brandFilters[0].length > 8 ? brandFilters[0].slice(0, 8) + '…' : brandFilters[0])
+      : `${brandFilters.length} ${t('inventory.filter_brands_selected')}`;
 
   const quantityLabel = quantityFilter === 'all' ? t('inventory.filter_quantity') : t(`quantity.${quantityFilter}`);
 
@@ -162,7 +164,7 @@ export default function InventoryScreen() {
         </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={[styles.filterButton, styles.filterButtonActive]}
+          style={[styles.filterButton, styles.filterButtonActive, { alignSelf: 'flex-start' }]}
           onPress={() => setShowSortModal(true)}
         >
           <ArrowUpDown size={15} color="#fff" />
@@ -219,7 +221,7 @@ export default function InventoryScreen() {
       {/* Format Modal */}
       <Modal visible={showFormatModal} animationType="slide" transparent onRequestClose={() => setShowFormatModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowFormatModal(false)}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <Text style={styles.modalTitle}>{t('inventory.filter_format')}</Text>
             {(['pan', 'tube'] as const).map(f => (
               <TouchableOpacity
@@ -240,7 +242,7 @@ export default function InventoryScreen() {
       {/* Brand Modal */}
       <Modal visible={showBrandModal} animationType="slide" transparent onRequestClose={() => setShowBrandModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowBrandModal(false)}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <Text style={styles.modalTitle}>{t('inventory.filter_brand')}</Text>
             <ScrollView>
               {brands.map(b => (
@@ -256,9 +258,6 @@ export default function InventoryScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowBrandModal(false)}>
-              <Text style={styles.modalCloseButtonText}>{t('color.cancel')}</Text>
-            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -266,7 +265,7 @@ export default function InventoryScreen() {
       {/* Sort Modal */}
       <Modal visible={showSortModal} animationType="slide" transparent onRequestClose={() => setShowSortModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowSortModal(false)}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <Text style={styles.modalTitle}>{t('inventory.sort_by')}</Text>
             {([
               { key: 'name', dir: 'asc', label: t('inventory.sort_name_asc') },
@@ -296,7 +295,7 @@ export default function InventoryScreen() {
       {/* Quantity Modal */}
       <Modal visible={showQuantityModal} animationType="slide" transparent onRequestClose={() => setShowQuantityModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowQuantityModal(false)}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: 24 + insets.bottom }]}>
             <Text style={styles.modalTitle}>{t('inventory.filter_quantity')}</Text>
             {(['full', 'half', 'low', 'empty'] as const).map(q => (
               <TouchableOpacity
@@ -347,6 +346,5 @@ const styles = StyleSheet.create({
   modalOptionText: { fontSize: 15, color: '#333' },
   modalOptionTextActive: { color: '#3B44AC', fontWeight: '600' },
   checkmark: { color: '#3B44AC', fontSize: 16, fontWeight: '600' },
-  modalCloseButton: { padding: 16, alignItems: 'center', marginTop: 8 },
-  modalCloseButtonText: { color: '#888', fontSize: 15 },
+
 });
