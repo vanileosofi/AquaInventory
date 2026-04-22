@@ -1,18 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
-const KEY = 'anthropic_api_key';
+const KEY = 'ai_api_key';
+const OLD_KEY = 'anthropic_api_key';
 const MODEL_KEY = 'aqua_ai_model';
 
 export async function getApiKey(): Promise<string> {
-  return (await AsyncStorage.getItem(KEY)) ?? '';
+  // Migrate from old key if exists
+  const old = await AsyncStorage.getItem(OLD_KEY);
+  if (old) {
+    await SecureStore.setItemAsync(KEY, old.trim());
+    await AsyncStorage.removeItem(OLD_KEY);
+  }
+  return (await SecureStore.getItemAsync(KEY)) ?? '';
 }
 
 export async function saveApiKey(key: string): Promise<void> {
-  await AsyncStorage.setItem(KEY, key.trim());
+  await SecureStore.setItemAsync(KEY, key.trim());
+  await AsyncStorage.removeItem(OLD_KEY); // clean up old key if still present
 }
 
 export async function clearApiKey(): Promise<void> {
-  await AsyncStorage.removeItem(KEY);
+  await SecureStore.deleteItemAsync(KEY);
 }
 
 // ─── Model ────────────────────────────────────────────────────────────────────

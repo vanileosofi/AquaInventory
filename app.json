@@ -45,7 +45,8 @@
           "photosPermission": "AquaInventory necesita acceso a tus fotos para analizar colores.",
           "cameraPermission": "AquaInventory necesita la cámara para fotografiar tus acuarelas."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
