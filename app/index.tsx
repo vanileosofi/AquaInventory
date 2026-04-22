@@ -69,7 +69,7 @@ export default function InventoryScreen() {
 
   const brandLabel = brandFilters.length === 0 ? t('inventory.filter_brand') :
     brandFilters.length === 1
-      ? (brandFilters[0].length > 8 ? brandFilters[0].slice(0, 8) + '…' : brandFilters[0])
+      ? (brandFilters[0].length > 6 ? brandFilters[0].slice(0, 6) + '…' : brandFilters[0])
       : `${brandFilters.length} ${t('inventory.filter_brands_selected')}`;
 
   const quantityLabel = quantityFilter === 'all' ? t('inventory.filter_quantity') : t(`quantity.${quantityFilter}`);
@@ -104,6 +104,17 @@ export default function InventoryScreen() {
         <Text style={styles.title}>{t('inventory.title')}</Text>
         <Text style={styles.colorCount}>Total: {colors.length}</Text>
       </View>
+
+      {/* Search bar */}
+      <TextInput
+        style={styles.searchInput}
+        value={search}
+        onChangeText={setSearch}
+        placeholder={t('inventory.search_placeholder')}
+        clearButtonMode="while-editing"
+        returnKeyType="search"
+        onSubmitEditing={() => Keyboard.dismiss()}
+      />
 
       {/* Results count + clear */}
       {hasFilters && (
@@ -170,17 +181,6 @@ export default function InventoryScreen() {
           <ArrowUpDown size={15} color="#fff" />
         </TouchableOpacity>
       </View>
-
-      {/* Search bar */}
-      <TextInput
-        style={styles.searchInput}
-        value={search}
-        onChangeText={setSearch}
-        placeholder={t('inventory.search_placeholder')}
-        clearButtonMode="while-editing"
-        returnKeyType="search"
-        onSubmitEditing={() => Keyboard.dismiss()}
-      />
 
       {/* List */}
       {sorted.length === 0 ? (
