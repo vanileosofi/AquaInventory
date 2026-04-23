@@ -116,16 +116,6 @@ export default function InventoryScreen() {
         onSubmitEditing={() => Keyboard.dismiss()}
       />
 
-      {/* Results count + clear */}
-      {hasFilters && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <TouchableOpacity onPress={clearFilters}>
-            <Text style={styles.clearButtonText}>{t('inventory.clear_filters')}</Text>
-          </TouchableOpacity>
-          <Text style={styles.resultsCount}>{filtered.length} / {colors.length}</Text>
-        </View>
-      )}
-
       {/* Filter buttons */}
       <View style={styles.filtersRow}>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
@@ -181,6 +171,16 @@ export default function InventoryScreen() {
           <ArrowUpDown size={15} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {/* Results count + clear */}
+      {hasFilters && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <TouchableOpacity onPress={clearFilters}>
+            <Text style={styles.clearButtonText}>{t('inventory.clear_filters')}</Text>
+          </TouchableOpacity>
+          <Text style={styles.resultsCount}>{filtered.length} / {colors.length}</Text>
+        </View>
+      )}
 
       {/* List */}
       {sorted.length === 0 ? (
